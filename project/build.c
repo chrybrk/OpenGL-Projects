@@ -14,10 +14,13 @@ const char *source[] = {
 	"Triangle",
 	"TriangleWithEBO",
 	"Test",
-	"ShaderUniforms"
+	"ShaderUniforms",
+	"Texture"
 };
 
 const size_t src_len = sizeof(source) / sizeof(source[0]);
+
+static bool COMMON_LIB_STATUS_HAS_CHANGED = false;
 
 void make_glad()
 {
@@ -57,6 +60,8 @@ void make_common()
 
 	if (needs_recompilation("bin/libcommon.a", (const char**)files, count))
 	{
+		COMMON_LIB_STATUS_HAS_CHANGED = true;
+
 		for (int i = 0; i < count; ++i)
 		{
 			char *file = files[i];
@@ -86,7 +91,7 @@ void make_source()
 		int count;
 		char **files = get_files_from_directory(writef("%s/", source[i]), &count);
 
-		if (needs_recompilation(writef("bin/%s", source[i]), (const char**)files, count))
+		if (needs_recompilation(writef("bin/%s", source[i]), (const char**)files, count) || COMMON_LIB_STATUS_HAS_CHANGED)
 		{
 			CMD(
 					"cc",
@@ -98,6 +103,7 @@ void make_source()
 					GLAD_LIB,
 					COMMON_LIB,
 					GL_LIB,
+					"-lm",
 					"-o",
 					writef("bin/%s", source[i])
 			);

@@ -3,20 +3,20 @@
 #include "../common/Shader.h"
 #include "../common/Window.h"
 
+extern float sinf(float);
+
 int main()
 {
-	GLFWwindow *window = InitWindow(800, 600, "TriangleWithEBO");
+	GLFWwindow *window = InitWindow(800, 600, "Texture");
 
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f,
-		-0.5f, 0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
+		0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top
 	};
 
 	unsigned int indices[] = {
-		0, 1, 3,
-		1, 2, 3
+		0, 1, 2
 	};
 	
 	unsigned int VBO;
@@ -36,10 +36,15 @@ int main()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	Shader shaderProgram = CreateShader("assets/shader/color.interpolate.vs", "assets/shader/color.interpolate.fs");
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	Shader shaderProgram = CreateShader("assets/shader/vao.buffer.vs", "assets/shader/vao.buffer.fs");
+
+	Vec3 color = { 0.2f, 0.5f, 0.4f };
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -47,12 +52,16 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, true);
 
+		float dt = glfwGetTime();
+
 		// remove comment to enable wireframe mode.
 		// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		glUseProgram(shaderProgram.shaderID);
+		ShaderBind(&shaderProgram);
+		ShaderSetFloat3(&shaderProgram, "Ucolor", color);
+
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		UpdateWindow(window);

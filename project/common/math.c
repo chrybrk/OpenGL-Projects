@@ -51,6 +51,50 @@ int FloatEquals(float x, float y)
 }
 
 
+float easeIn(float x)
+{
+	return x * x;
+}
+
+float easeInOutCubic(float x)
+{
+	return x < 0.5 ? 4 * x * x : 1 - powf(-2 * x + 2, 3) / 2;
+}
+
+float easeInElastic(float x)
+{
+    const float c4 = (2 * PI) / 3;
+    return x == 0
+        ? 0
+        : x == 1
+        ? 1
+        : -powf(2, 10 * x - 10) * sinf((x * 10 - 10.75) * c4);
+}
+
+float easeOutBounce(float x)
+{
+    const float n1 = 7.5625;
+    const float d1 = 2.75;
+    if (x < 1 / d1) {
+    return n1 * x * x;
+    } else if (x < 2 / d1) {
+			float c = x - 1.5f;
+			return n1 * (c / d1) * c + 0.75;
+    } else if (x < 2.5 / d1) {
+			float c = x - 2.25f;
+			return n1 * (c / d1) * c + 0.9375;
+    } else {
+			float c = x - 2.625;
+			return n1 * (c / d1) * c + 0.984375;
+    }
+}
+
+float easeMine(float x)
+{
+	return x < 0.5f ? sinf(6.9f * x): sinf(3.7f * x);
+}
+
+
 /*
 	/////////////////////////////////////////////////////////
 	///
