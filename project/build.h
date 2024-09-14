@@ -1,5 +1,9 @@
 #ifdef IMPLEMENT_BUILD_C
 
+#if __WIN32__
+#include <errno.h>
+#endif
+
 // ------------------------------------------
 
 // Regular text
@@ -86,7 +90,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#if __UNIX__
 #include <sys/wait.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -97,7 +103,11 @@
 #endif
 
 #ifndef SOURCE_EXEC_FILE
+#if __UNIX__
 #define SOURCE_EXEC_FILE "build"
+#elif __WIN32__
+#define SOURCE_EXEC_FILE "build.exe"
+#endif
 #endif
 
 #define safe(value)	__safe_callback__(value, (char*)__FILE__, __LINE__, (char*)__FUNCTION__)
@@ -106,10 +116,11 @@
 #define ERROR(...) printf("%s[ERROR]:%s %s\n", BRED, reset, writef(__VA_ARGS__)), exit(1);
 #define ACTION(...) printf("%s[ACTION]:%s %s\n", BCYN, reset, writef(__VA_ARGS__));
 #define CMD(...) cmd_execute(__VA_ARGS__, NULL)
+#define writef(...) ({  writef_function(__VA_ARGS__, NULL); })
 
 bool state_of_rebuilds = false;
 
-char *writef(char *s, ...);
+char *writef_function(char *s, ...);
 void cmd_execute(char *first, ...);
 char *join(unsigned char sep, const char **buffer, size_t n);
 void *__safe_callback__(void *PTR, char *F, int LINE, char *FUNCTION_NAME);
@@ -129,7 +140,11 @@ char **get_files_from_directory(const char *path, int *count)
 	while ((data = readdir(dir)) != NULL)
 	{
 		// it means that the current *ptr is a file not a directory
+#		if __UNIX__
 		if (data->d_type != DT_DIR)
+#		elif __WIN32__
+		if (data->d_ino != ENOTDIR && (strcmp(data->d_name, ".") && strcmp(data->d_name, "..")))
+#		endif
 		{
 			char *fileName = data->d_name;
 
@@ -181,39 +196,85 @@ bool needs_recompilation(const char *binary, const char *sources[], size_t num_s
 	return false;
 }
 
-char *writef(char *s, ...)
+char *writef_function(char *s, ...)
 {
-    char *string;
-    va_list args;
-    va_start(args, s);
-    vasprintf(&string, s, args);
-    va_end(args);
-    return string;
+	size_t buffer_size = 64; // 64 bytes
+	char *buffer = (char*)malloc(buffer_size);
+
+	if (buffer == NULL) return NULL;
+
+	va_list ap;
+	va_start(ap, s);
+
+	int nSize = vsnprintf(buffer, buffer_size, s, ap);
+	if (nSize < 0)
+	{
+		free(buffer);
+		va_end(ap);
+	}
+
+	if (nSize >= buffer_size)
+	{
+		buffer_size = nSize + 1;
+		buffer = (char*)realloc(buffer, buffer_size);
+
+		if (buffer == NULL) return NULL;
+
+		va_end(ap);
+
+		va_start(ap, s);
+		vsnprintf(buffer, buffer_size, s, ap);
+	}
+
+	va_end(ap);
+
+	return buffer;
 }
 
 char *join(unsigned char sep, const char **buffer, size_t n)
 {
-	char *localBuffer = NULL;
+	/* *** BUFFER ALLOCATOR *** */
 
-	for (unsigned int i = 0; i < n; ++i)
+	/*
+		* How this is going to work?
+		* Well, we define a *pool, and fill it up.
+		* If pools fills up, we re-alloc it with the same size.
+	*/
+
+	// set the max size for pool
+	const size_t POOL_SIZE = 64 * 1024;
+
+	char *pool = (char*)malloc(POOL_SIZE); // 65536 bytes
+	if (pool == NULL) printf("Failed to create pool for joining text.\n");
+
+	// set pool to NULL
+	pool = (char*)memset(pool, 0, POOL_SIZE);
+
+	size_t current_pool_size = POOL_SIZE;
+	size_t ptr_in_pool = 0; // it will keep track where we are in the pool.	
+
+	for (size_t i = 0; i < n; ++i)
 	{
 		const char *string = writef("%s%c", buffer[i], sep);
-
-		if (localBuffer)
+		size_t len = strlen(string);
+		
+		if ((ptr_in_pool + len) >= current_pool_size)
 		{
-			localBuffer = realloc(localBuffer, (strlen(string) + strlen(localBuffer)) * sizeof(char) + 8);
-			localBuffer = strcat(localBuffer, string);
-		}
-		else
-		{
-			localBuffer = malloc(strlen(string) * sizeof(char) + 8);
-			localBuffer = strcpy(localBuffer, string);
+			current_pool_size += POOL_SIZE;
+			pool = (char*)realloc(pool, current_pool_size);
 		}
 
-		localBuffer[strlen(localBuffer)] = '\0';
+		ptr_in_pool += len;
+		pool = strcat(pool, string);
+		pool[ptr_in_pool + 1] = '\0';
 	}
 
-	return localBuffer;
+	// create a final buffer to be returned.
+	char *bf = (char*)malloc(ptr_in_pool);
+	bf = strncpy(bf, pool, ptr_in_pool);
+	bf[ptr_in_pool] = '\0'; // don't forget to add null ptr, it is pain in the ass.
+
+	return bf;
 }
 
 void *__safe_callback__(void *PTR, char *F, int LINE, char *FUNCTION_NAME)
@@ -244,13 +305,13 @@ void cmd_execute(char *first, ...)
 	}
 	va_end(args);
 
-	char *buffer[length];
+	char *buffer[length + 1];
 	safe(buffer);
 
 	length = 0;
 	buffer[length++] = first;
 
-  va_start(args, first);
+    va_start(args, first);
 	for (
 			char *next = va_arg(args, char*);
 			next != NULL;
@@ -258,7 +319,7 @@ void cmd_execute(char *first, ...)
 		buffer[length++] = next;
 	}
 	va_end(args);
-
+	
 	char *b = join(' ', (const char**)buffer, length);
 	INFO("CMD: %s", b);
 
@@ -280,8 +341,9 @@ void build_itself()
 	if (needs_recompilation(SOURCE_EXEC_FILE, sources, sizeof(sources) / sizeof(sources[0])))
 	{
 		INFO("Source file has changed, it needs to be recompiled.");
-		CMD("cc", SOURCE_C_FILE, "-I.", "-o", SOURCE_EXEC_FILE);
-		CMD(writef("./%s", SOURCE_EXEC_FILE));
+		CMD("gcc", SOURCE_C_FILE, "-I.", "-o", writef("%s.new", SOURCE_EXEC_FILE));
+		CMD("mv", SOURCE_EXEC_FILE, writef("%s.old", SOURCE_EXEC_FILE));
+		CMD("mv", writef("%s.new", SOURCE_EXEC_FILE), SOURCE_EXEC_FILE);
 		exit(0);
 	}
 }

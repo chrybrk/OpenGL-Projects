@@ -1,5 +1,6 @@
-#define IMPLEMENT_BUILD_C
+#include <stdio.h>
 
+#define IMPLEMENT_BUILD_C
 #include "build.h"
 
 #define CFLAGS  "-O3", "-Wall", "-ggdb"
@@ -8,7 +9,12 @@
 #define LIB_PATH "-Ldependencies/", "-Lbin/", "-L."
 #define COMMON_LIB "-l:bin/libcommon.a -lm"
 #define GLAD_LIB "-l:bin/libglad.a"
+
+#if __UNIX__
 #define GL_LIB "-l:dependencies/libglfw.so -lGL -lX11 -lpthread -lXrandr -lXi -ldl"
+#elif __WIN32__
+#define GL_LIB "-l:dependencies/libglfw3.a -lopengl32 -lgdi32 -lwinmm  -lpthread -ldl"
+#endif
 
 const char *source[] = {
 	"Triangle",
@@ -30,7 +36,7 @@ void make_glad()
 	if (needs_recompilation(lib, glad_source, 1))
 	{
 		CMD(
-				"cc",
+				"gcc",
 				CFLAGS,
 				VENDOR_INCLUDE,
 				"-c",
@@ -65,8 +71,11 @@ void make_common()
 			if (file[len - 1] == 'c')
 			{
 				CMD(
-						"cc",
+						"gcc",
 						CFLAGS,
+						COMMON_INCLUDE,
+						VENDOR_INCLUDE,
+						"-lm",
 						"-c",
 						file,
 						"-o",
@@ -89,10 +98,11 @@ void make_source()
 		if (needs_recompilation(writef("bin/%s", source[i]), (const char**)files, count))
 		{
 			CMD(
-					"cc",
+					"gcc",
 					CFLAGS,
 					join(' ', (const char**)files, count),
 					writef("-I%s/", source[i]),
+					VENDOR_INCLUDE,
 					COMMON_INCLUDE,
 					LIB_PATH,
 					GLAD_LIB,

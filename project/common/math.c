@@ -1,3 +1,4 @@
+#include <math.h>
 #include "math.h"
 
 // Clamp float value
