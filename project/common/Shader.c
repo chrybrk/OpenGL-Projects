@@ -2,6 +2,42 @@
 #include "common.h"
 #include "IO.h"
 
+/*
+ * float 	-> 4
+ * int 		-> 4
+ * unsigned int 	-> 4
+*/
+
+unsigned int ShaderGetUniformLocation(unsigned int program, const char *name)
+{
+	unsigned int result = glGetUniformLocation(program, name);
+
+	if (result)
+		fprintf(stderr, "[ERROR]: Failed to retrive `%s` uniform from shader.\n", name);
+
+	return result;
+}
+
+void ShaderBind(Shader *shader)
+{
+	glUseProgram(shader->shaderID);
+}
+
+void ShaderSetInt(Shader *shader, const char *name, int value)
+{
+	glUniform1i(ShaderGetUniformLocation(shader->shaderID, name), value);
+}
+
+void ShaderSetFloat(Shader *shader, const char *name, float value)
+{
+	glUniform1f(ShaderGetUniformLocation(shader->shaderID, name), value);
+}
+
+void ShaderSetFloat3(Shader *shader, const char *name, const Vec3 value)
+{
+	glUniform3f(ShaderGetUniformLocation(shader->shaderID, name), value.x, value.y, value.z);
+}
+
 void CheckShader(unsigned int shader, const char *message)
 {
 	int status;
@@ -41,14 +77,20 @@ unsigned int CreateFragmentShader(const char *fragmentShaderSource)
 	return shader;
 }
 
-unsigned int CreateShader(const char *vertexShaderPath, const char *fragmentShaderPath)
+Shader CreateShader(const char *vertexShaderPath, const char *fragmentShaderPath)
 {
 	const char *vertexShaderSource = read_file(vertexShaderPath);
 	const char *fragmentShaderSource = read_file(fragmentShaderPath);
 
 	// check if files exist.
 	if (!vertexShaderSource || !fragmentShaderSource)
-		return -1;
+	{
+		printf("shader_err: I think, you passed NULL in file parameters.\n");
+
+		return (Shader) { 
+			-1
+		};
+	}
 
 	// compile vertex and fragment shader 
 	unsigned int vertexShaderStatus = CreateVetexShader(vertexShaderSource);
@@ -75,5 +117,7 @@ unsigned int CreateShader(const char *vertexShaderPath, const char *fragmentShad
 	glDeleteShader(vertexShaderStatus);
 	glDeleteShader(fragmentShaderStatus);
 
-	return program;
+	return (Shader) { 
+		program
+	};
 }

@@ -77,6 +77,16 @@ float Wrap(float value, float min, float max);
 // Check whether two given floats are almost equal
 int FloatEquals(float x, float y);
 
+float easeIn(float x);
+
+float easeInOutCubic(float x);
+
+float easeInElastic(float x);
+
+float easeOutBounce(float x);
+
+float easeMine(float x);
+
 
 /*
 	/////////////////////////////////////////////////////////
