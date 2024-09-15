@@ -3,6 +3,7 @@
 
 #include "../vendor/glad/glad.h"
 #include "../vendor/GLFW/glfw3.h"
+#include "../vendor/stb/stb_image.h"
 
 #include <stdio.h>
 #include <stdbool.h>

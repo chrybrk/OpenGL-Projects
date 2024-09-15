@@ -1,5 +1,4 @@
 #include "Graphic.h"
-#include <stddef.h>
 
 int GetElementCount(ShaderElementKind kind)
 {
@@ -142,7 +141,6 @@ void VertexArrayPointers(VertexArray *va, VertexBuffer *vb)
     VertexBufferBind(vb);
 
     int prevOffset = 0;
-
     for (size_t i = 0; i < vb->elements->size; ++i)
     {
         glVertexAttribPointer(

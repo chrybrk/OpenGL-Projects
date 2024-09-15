@@ -11,6 +11,7 @@ void ShaderBind(Shader *shader);
 void ShaderSetInt(Shader *shader, const char *name, int value);
 void ShaderSetFloat(Shader *shader, const char *name, float value);
 void ShaderSetFloat3(Shader *shader, const char *name, const Vec3 value);
+void ShaderSetMat4(Shader *shader, const char *name, const Mat4x4 value);
 
 Shader CreateShader(const char *vertexShaderPath, const char *fragmentShaderPath);
 

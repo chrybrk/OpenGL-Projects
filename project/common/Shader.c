@@ -8,11 +8,11 @@
  * unsigned int 	-> 4
 */
 
-unsigned int ShaderGetUniformLocation(unsigned int program, const char *name)
+int ShaderGetUniformLocation(unsigned int program, const char *name)
 {
-	unsigned int result = glGetUniformLocation(program, name);
+	int result = glGetUniformLocation(program, name);
 
-	if (result)
+	if (result < 0)
 		fprintf(stderr, "[ERROR]: Failed to retrive `%s` uniform from shader.\n", name);
 
 	return result;
@@ -36,6 +36,11 @@ void ShaderSetFloat(Shader *shader, const char *name, float value)
 void ShaderSetFloat3(Shader *shader, const char *name, const Vec3 value)
 {
 	glUniform3f(ShaderGetUniformLocation(shader->shaderID, name), value.x, value.y, value.z);
+}
+
+void ShaderSetMat4(Shader *shader, const char *name, const Mat4x4 value)
+{
+	glUniformMatrix4fv(ShaderGetUniformLocation(shader->shaderID, name), 1, GL_FALSE, Mat4x4ToFloat(value).v);
 }
 
 void CheckShader(unsigned int shader, const char *message)
