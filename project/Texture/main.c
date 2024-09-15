@@ -1,50 +1,60 @@
 #include "../common/common.h"
+#include "../common/Graphic.h"
 #include "../common/IO.h"
 #include "../common/Shader.h"
 #include "../common/Window.h"
 
-extern float sinf(float);
+#define STB_IMAGE_IMPLEMENTATION
+#include "../vendor/stb/stb_image.h"
 
 int main()
 {
 	GLFWwindow *window = InitWindow(800, 600, "Texture");
 
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load("assets/image/metalbox_diffuse.png", &width, &height, &nrChannels, 0);
+	if (data == NULL) printf("Failed to load image.\n");
+
+	unsigned int texture;
+	glGenTextures(1, &texture);
+
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	stbi_image_free(data);
+
 	float vertices[] = {
-		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-		0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top
+		// positions 					   // colors 						// texture coords
+		 0.5f,   0.5f,   0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f, // top right
+		 0.5f,   -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
+		-0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f  // top left
 	};
 
 	unsigned int indices[] = {
-		0, 1, 2
+		0, 1, 3,
+		1, 2, 3
 	};
-	
-	unsigned int VBO;
-	glGenBuffers(1, &VBO);
 
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
+	ShaderElementKind shaderElementKinds[] = { f3, f3, f2 };
+	ShaderElement SE = InitShaderElement(shaderElementKinds, sizeof(shaderElementKinds) / sizeof(shaderElementKinds[0]), GL_FLOAT, GL_FALSE);
 
-	unsigned int VAO;
-	glGenVertexArrays(1, &VAO);
+	VertexBuffer vbo;
+	ElementBuffer ebo;
+	VertexArray vao;
 
-	glBindVertexArray(VAO);
+	vao = CreateVertexArray();
+	VertexArrayBind(&vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	vbo = CreateVertexBuffer(vertices, sizeof(vertices), STATIC);
+	ebo = CreateElementBuffer(indices, sizeof(indices), STATIC);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	VertexBufferSetLayout(&vbo, &SE);
+	VertexArrayPointers(&vao, &vbo);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	Shader shaderProgram = CreateShader("assets/shader/vao.buffer.vs", "assets/shader/vao.buffer.fs");
-
-	Vec3 color = { 0.2f, 0.5f, 0.4f };
+	Shader shaderProgram = CreateShader("assets/shader/texture.vs", "assets/shader/texture.fs");
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -58,10 +68,11 @@ int main()
 		// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		ShaderBind(&shaderProgram);
-		ShaderSetFloat3(&shaderProgram, "Ucolor", color);
 
-		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		VertexArrayBind(&vao);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		UpdateWindow(window);

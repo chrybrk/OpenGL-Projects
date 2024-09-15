@@ -3,43 +3,55 @@
 
 #include "common.h"
 
-/*
- * {
- * 	{ Sf3, (Vec3) { 0.5f, 0.5f, 0.5f } },
- * 	{ Sf3, (Vec3) { 0.5f, 0.5f, 0.5f } }
- * }
-*/
+typedef enum {
+	// integer
+	i1, i2, i3, i4,
+
+	// unsigned integer
+	ui1, ui2, ui3, ui4,
+
+	// float
+	f1, f2, f3, f4
+} ShaderElementKind;
+
+typedef struct ShaderElement {
+	ShaderElementKind *kinds;
+	size_t size;
+	unsigned int openGLType;
+	bool normalized;
+	size_t totalElements;
+} ShaderElement;
+
+ShaderElement InitShaderElement(ShaderElementKind *kinds, size_t kind_size, unsigned int openGLType, bool normalized);
+
+typedef enum {
+	STATIC,
+	DYNAMIC
+} DrawKind;
 
 typedef struct VertexBuffer {
 	unsigned int ID;
+	ShaderElement *elements;
 } VertexBuffer;
 
-VertexBuffer CreateVetexBuffer();
+VertexBuffer CreateVertexBuffer(float *vertices, size_t size, DrawKind drawKind);
 void VertexBufferBind(VertexBuffer *vb);
-void VertexBufferUnbind(VertexBuffer *vb);
-void VertexBufferSet(VertexBuffer *vb, float *vertices, size_t size);
+void VertexBufferSetLayout(VertexBuffer *vb, ShaderElement *elements);
 
 typedef struct ElementBuffer {
 	unsigned int ID;
 } ElementBuffer;
 
-ElementBuffer CreateElementBuffer();
-void ElementBufferBind(ElementBuffer *vb);
-void ElementBufferUnbind(ElementBuffer *vb);
-void ElementBufferSet(ElementBuffer *vb, float *vertices, size_t size);
+ElementBuffer CreateElementBuffer(unsigned int *indices, size_t size, DrawKind drawKind);
+void ElementBufferBind(ElementBuffer *eb);
 
-enum ShaderDataType {
-	Float,
-	Float2,
-	Float3,
-	Float4
-};
+typedef struct VertexArray {
+	unsigned int ID;
+} VertexArray;
 
-typedef struct VertexArrayElement {
-	ShaderDataType sdt;
-	void *value;
-} VertexArrayElement;
-
-void VertexArraySet(VertexArrayElement *elements);
+VertexArray CreateVertexArray();
+void VertexArrayBind(VertexArray *va);
+void VertexArrayUnbind(VertexArray *va);
+void VertexArrayPointers(VertexArray *va, VertexBuffer *vb);
 
 #endif // __GRAPHIC_H__
