@@ -3,9 +3,6 @@
 
 #include <stdio.h>
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 #include "common.h"
 
 GLFWwindow *InitWindow(int width, int height, const char *title);

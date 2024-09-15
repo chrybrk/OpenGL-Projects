@@ -1,8 +1,8 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "../vendor/glad/glad.h"
+#include "../vendor/GLFW/glfw3.h"
 
 #include <stdio.h>
 #include <stdbool.h>

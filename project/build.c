@@ -100,7 +100,14 @@ void make_source()
 		int count;
 		char **files = get_files_from_directory(writef("%s/", source[i]), &count);
 
-		if (needs_recompilation(writef("bin/%s", source[i]), (const char**)files, count) || COMMON_LIB_STATUS_HAS_CHANGED)
+		if (
+
+#			if __UNIX__
+			needs_recompilation(writef("bin/%s", source[i])
+#			elif __WIN32__
+			needs_recompilation(writef("bin/%s.exe", source[i])
+#endif
+			, (const char**)files, count) || COMMON_LIB_STATUS_HAS_CHANGED)
 		{
 			CMD(
 					"gcc",
@@ -117,6 +124,8 @@ void make_source()
 					"-o",
 					writef("bin/%s", source[i])
 			);
+		} else {
+			INFO("File is up-to-dated, `%s`.", source[i]);	
 		}
 	}
 }

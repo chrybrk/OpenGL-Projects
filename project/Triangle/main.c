@@ -1,6 +1,4 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
+#include "../common/common.h"
 #include "../common/IO.h"
 
 #include <stdio.h>

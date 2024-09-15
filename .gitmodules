@@ -1,0 +1,3 @@
+[submodule "project/vendor/stb"]
+	path = project/vendor/stb
+	url = https://github.com/chrybrk/stb.git
