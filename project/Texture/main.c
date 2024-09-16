@@ -8,6 +8,7 @@
 int main()
 {
 	GLFWwindow *window = InitWindow(800, 600, "Texture");
+	glEnable(GL_DEPTH_TEST);
 
 	int width, height, nrChannels;
 	unsigned char *data = stbi_load("assets/image/metalbox_diffuse.png", &width, &height, &nrChannels, 0);
@@ -86,23 +87,43 @@ int main()
 	Shader shaderProgram = CreateShader("assets/shader/texture.vs", "assets/shader/texture.fs");
 
 	Mat4x4 model = Mat4x4Identity();
-
 	Mat4x4 view = Mat4x4Identity();
-	view = Mat4x4Translation((Vec3) { 0.0f, 0.0f, -3.0f});
+	Mat4x4 proj = Mat4x4Prespective(DEG2RAD * 45.0f, 800.0f / 600.0f, 0.1f, 100.0f);
 
-	Mat4x4 proj = Mat4x4Prespective(DEG2RAD * 45.0f, 800.0f / 600.0f, 0.1f, 10.0f);
+	// camera
+	Vec3 cameraPosition = (Vec3) { 0.0f, 0.0f, 3.0f };
+	Vec3 cameraFront = (Vec3) { 0.0f, 0.0f, -1.0f };
+	Vec3 cameraUp = (Vec3) { 0.0f, 1.0f, 0.0f };
 
-	glEnable(GL_DEPTH_TEST);
+	float dt = 0.0f;
+	float lf = 0.0f;
 
 	while (!glfwWindowShouldClose(window))
 	{
+		float cf = glfwGetTime();
+		dt = cf - lf;
+		lf = cf;
+
+		const float cameraSpeed = 2.5f * dt;
+
 		ClearBackground((Color) { 23, 23, 23, 255 });
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, true);
 
-		float dt = glfwGetTime();
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			cameraPosition = Vec3Add(cameraPosition, Vec3Scale(cameraFront, cameraSpeed));
 
-		model = Mat4x4Rotate((Vec3){ 0.5f, 1.0f, 0.0f}, DEG2RAD * 50.0f * dt);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			cameraPosition = Vec3Sub(cameraPosition, Vec3Scale(cameraFront, cameraSpeed));
+
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			cameraPosition = Vec3Sub(cameraPosition, Vec3Scale(Vec3Normalize(Vec3CrossProduct(cameraFront, cameraUp)), cameraSpeed));
+
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			cameraPosition = Vec3Add(cameraPosition, Vec3Scale(Vec3Normalize(Vec3CrossProduct(cameraFront, cameraUp)), cameraSpeed));
+
+		model = Mat4x4Rotate((Vec3){ 0.5f, 1.0f, 0.0f}, DEG2RAD * 50.0f * cf);
+		view = Mat4x4LookAt(cameraPosition, Vec3Add(cameraPosition, cameraFront), cameraUp);
 
 		// remove comment to enable wireframe mode.
 		// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
